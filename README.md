@@ -8,7 +8,8 @@ Bash scripts that add a new subnet to a storage account's virtual network rules,
 | --- | --- |
 | `add-storage-subnet.sh` | Processes one storage account (`-g` and `-a`). |
 | `add-storage-subnet-all.sh` | Runs `add-storage-subnet.sh` for every storage account in the current subscription, or in one resource group if `-g` is given. |
-| `storage-subnet-lib.sh` | Shared helper (subnet ID check). Sourced by both scripts, not run directly. Keep it in the same folder as the scripts. |
+| `add-storage-subnet-subs.sh` | Runs `add-storage-subnet-all.sh` for every subscription listed in a CSV file. |
+| `storage-subnet-lib.sh` | Shared helper (subnet ID check). Sourced by all scripts, not run directly. Keep it in the same folder as the scripts. |
 
 ## Prerequisites
 
@@ -56,6 +57,37 @@ Bash scripts that add a new subnet to a storage account's virtual network rules,
 | `-g` | Optional: only process accounts in this resource group |
 | `-d` | Dry run, passed through to `add-storage-subnet.sh` |
 | `-h` | Show help |
+
+### Multiple subscriptions from a CSV file
+
+```bash
+./add-storage-subnet-subs.sh \
+  -f <subscriptions.csv> \
+  -r <reference-subnet-id> \
+  -n <new-subnet-id> \
+  [-g <resource-group>] \
+  [-d]
+```
+
+| Option | Description |
+| --- | --- |
+| `-f` | CSV file listing the subscriptions to process (required) |
+| `-r` | Full resource ID of the subnet that must already be allowed (required) |
+| `-n` | Full resource ID of the subnet to add (required) |
+| `-g` | Optional: only process accounts in this resource group, in every subscription |
+| `-d` | Dry run, passed through to `add-storage-subnet-all.sh` |
+| `-h` | Show help |
+
+The CSV has one subscription per line, as a name or ID. The `subscription` header line is optional. Blank lines and lines starting with `#` are ignored. Lines with more than one field are rejected before any subscription is changed.
+
+```csv
+subscription
+my-dev-sub
+00000000-0000-0000-0000-000000000000
+# comments are ignored
+```
+
+The reference and new subnet IDs are the same for every subscription. The script switches to each subscription in turn and restores the original subscription when it exits.
 
 ### Subnet ID format
 
@@ -121,5 +153,5 @@ Apply to one resource group:
 
 - Run a dry run (`-d`) first to confirm the accounts and subnets that will change.
 - Keep `storage-subnet-lib.sh` next to the scripts. Copying only the two scripts will fail.
-- The scripts use the currently selected Azure subscription. They have no subscription option.
+- `add-storage-subnet.sh` and `add-storage-subnet-all.sh` use the currently selected Azure subscription. `add-storage-subnet-subs.sh` switches subscriptions from its CSV file and restores the original one on exit.
 # storage-account-subnet-add-script
